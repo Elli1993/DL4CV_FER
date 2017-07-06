@@ -2,7 +2,7 @@ import numpy as np
 from utils.dataset import  load_fer
 
 def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
-    if inputs == 0 and targets == 0:
+    if inputs == None or targets == None:
         inputs , targets = load_fer(0, True, False).values()
     assert len(inputs) == len(targets)
     if shuffle:
