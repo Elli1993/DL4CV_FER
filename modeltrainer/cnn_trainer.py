@@ -9,9 +9,9 @@ import numpy as np
 from models.cnn_models import build_cnn
 
 def train_model(networkname = None, num_epochs = 10, batch_size = 200):
-    train_data = load_fer(0, one_hot=True, flat=False)
-    val_data = load_fer(1, one_hot=True, flat=False)
-    test_data = load_fer(2, one_hot=True, flat=False)
+    train_data = load_fer(0, one_hot=False, flat=False)
+    val_data = load_fer(1, one_hot=False, flat=False)
+    test_data = load_fer(2, one_hot=False, flat=False)
 
     input_var = T.tensor4('inputs')
     target_var = T.ivector('targets')
