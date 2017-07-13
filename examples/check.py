@@ -1,7 +1,6 @@
 from utils.data_iterator import iterate_minibatches
 from utils.visualize import display_one_image
 from utils.dataset import load_fer
-
 #this is an example of how to use the iterator and to load the dataset
 
 fer = load_fer(0, one_hot=True, flat=False, expand=False)

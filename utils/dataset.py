@@ -6,7 +6,7 @@ def convert_to_one_hot(raw_target):
     n_uniques = len(np.unique(raw_target))
     one_hot_target = np.zeros((raw_target.shape[0], n_uniques))
     one_hot_target[np.arange(raw_target.shape[0]), raw_target.astype(np.int)] = 1
-    return one_hot_target.astype(int)
+    return one_hot_target.astype(np.int32)
 
 def load_fer(dataset = 0, one_hot = True, flat = True, expand = False):
     '''
@@ -63,21 +63,21 @@ def load_fer(dataset = 0, one_hot = True, flat = True, expand = False):
     if dataset == 0:
         training_images = np.asarray(training_images)
         training_images = np.reshape(training_images, (-1, 1, 48, 48))
-        training_labels = np.asarray(training_labels, dtype=int)
+        training_labels = np.asarray(training_labels, dtype=np.int32)
         if one_hot:
             training_labels = convert_to_one_hot(training_labels)
         fer = {'data': training_images, 'target': training_labels}
     elif dataset == 1:
         validation_images = np.asarray(validation_images)
         validation_images = np.reshape(validation_images, (-1, 1, 48, 48))
-        validation_labels = np.asarray(validation_labels, dtype=int)
+        validation_labels = np.asarray(validation_labels, dtype=np.int32)
         if one_hot:
             validation_labels = convert_to_one_hot(validation_labels)
         fer = {'data': validation_images, 'target': validation_labels}
     else:
         test_images = np.asarray(test_images)
         test_images = np.reshape(test_images, (-1, 1, 48, 48))
-        test_labels = np.asarray(test_labels, dtype=int)
+        test_labels = np.asarray(test_labels, dtype=np.int32)
         if one_hot:
             test_labels = convert_to_one_hot(test_labels)
         fer = {'data': test_images, 'target': test_labels}
