@@ -9,15 +9,36 @@ import os
 import matplotlib.patheffects as PathEffects
 # import pickle
 import cPickle as pickle
+import datetime
+import time
 
 import theano
 import lasagne
 from lasagne.layers import InputLayer, DenseLayer, DropoutLayer
-# from lasagne.layers.dnn import Conv2DDNNLayer as ConvLayer  #needs GPU support (!use this when training on GPU)
-from lasagne.layers import Conv2DLayer as ConvLayer
+from lasagne.layers.dnn import Conv2DDNNLayer as ConvLayer  #needs GPU support (!use this when training on GPU)
+# from lasagne.layers import Conv2DLayer as ConvLayer   #use if you do not have GPU support
 from lasagne.layers import MaxPool2DLayer as PoolLayer
 from lasagne.layers import LocalResponseNormalization2DLayer as NormLayer
 from lasagne.utils import floatX
+
+#Configurations
+SAVE_BEST_PARAMS = False
+LOAD_PREVIOUS_PARAMS = False #If True: specify previous param file below, if False: std. pretrained net will be loaded
+PARAM_FILE_TO_LOAD = 'experiments/' + '2017_07_13_10_52_15_onlyPretrainedNet_BestParams/' +'best_params_0.pkl'
+
+
+
+# create new experiment folder
+dateTimeOfExperiment = str(datetime.datetime.today().strftime('%Y_%m_%d_%H_%M_%S'))
+additionalInfo = '_pretrinedOnly'   #add additional Info about the experiment you are runneing
+experimentname = dateTimeOfExperiment + additionalInfo
+experimentpath = 'experiments/' + experimentname +'/'
+if not os.path.exists(experimentpath):
+    os.makedirs(experimentpath)
+
+epoch = 0
+
+
 
 #Define the network structure
 print 'define network'
@@ -51,21 +72,36 @@ model = pickle.load(open('vgg_cnn_s.pkl', 'rb'))
 CLASSES = model['synset words']
 MEAN_IMAGE = model['mean image']
 
-#set pretrained model values
-print 'set pretrained model values'
-lasagne.layers.set_all_param_values(output_layer, model['values'])
 
+# Function to read the pickle file with the network learnt parameters
+def load_network_params(layer, filename):
+    with open(filename, 'rb') as f:
+        while True:
+            try:
+                # Load pickle file that contains network parameters
+                network_parameters = pickle.load(f)
+            except EOFError:
+                break
+    lasagne.layers.set_all_param_values(layer, network_parameters)
+
+if LOAD_PREVIOUS_PARAMS == True:
+    #set params of previous experiment
+    load_network_params(output_layer,PARAM_FILE_TO_LOAD)
+else:
+    #set std. pretrained model values
+    print 'set pretrained model values'
+    lasagne.layers.set_all_param_values(output_layer, model['values'])
 
 #get images from a folder
 def get_image(image_path):
     from scipy import misc
-    arr = misc.imread(image_path)  # 640x480x3 array
+    arr = misc.imread(image_path, mode='RGB')
     return arr
 
 PATH_TO_TESTIMAGE_FOLDER = 'testImages/'
 testFileList = os.listdir(PATH_TO_TESTIMAGE_FOLDER)
 testFileList[:] = [f for f in testFileList if f.endswith(".jpg")]
-np.random.shuffle(testFileList)
+#np.random.shuffle(testFileList)
 
 def prep_image_from_folder(image):
     image_path = PATH_TO_TESTIMAGE_FOLDER +image
@@ -106,8 +142,18 @@ for nrImage,image in enumerate(testFileList):
         for n, label in enumerate(top5):
             plt.text(0, 10 + n * 17, '{}. {}: {}'.format(n+1, "{0:.2f}".format(top5Prob[n]), CLASSES[label]), fontsize=10, backgroundcolor=(1, 1, 1, 0.5), alpha=1)
         #plt.draw()
-        fig.savefig('predLabels'+str(nrImage)+'.png')
+        fig.savefig(experimentpath + 'predLabels'+str(nrImage)+'.png')
 #plt.show()
+
+
+
+
+# save the parameters of the network after that epoch of training
+if SAVE_BEST_PARAMS == True:
+    params = lasagne.layers.get_all_param_values(output_layer)
+    paramname = experimentpath + 'best_params_epoch_' + str(epoch) + '.pkl'
+    pickle.dump(params, open(paramname, 'wb'))
+
 
 
 
