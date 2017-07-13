@@ -60,18 +60,21 @@ def load_fer(dataset = 0, one_hot = True, flat = True):
 
     if dataset == 0:
         training_images = np.asarray(training_images)
+        training_images = np.expand_dims(training_images, axis=0)
         training_labels = np.asarray(training_labels)
         if one_hot:
             training_labels = convert_to_one_hot(training_labels)
         fer = {'data': training_images, 'target': training_labels}
     elif dataset == 1:
         validation_images = np.asarray(validation_images)
+        validation_images = np.expand_dims(validation_images, axis=0)
         validation_labels = np.asarray(validation_labels)
         if one_hot:
             validation_labels = convert_to_one_hot(validation_labels)
         fer = {'data': validation_images, 'target': validation_labels}
     else:
         test_images = np.asarray(test_images)
+        test_images = np.expand_dims(test_images, axis=0)
         test_labels = np.asarray(test_labels)
         if one_hot:
             test_labels = convert_to_one_hot(test_labels)
