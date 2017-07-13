@@ -1,2 +1,8 @@
 .idea/
-Scripts/experiments/
+testImages/
+testImages_all/
+experiments/
+fer2013/
+*.png
+*.jpg
+*.pkl
