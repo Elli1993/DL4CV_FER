@@ -1,11 +1,14 @@
 .idea/
-Scripts/experiments/
+experiments/
 .env*
 *.pyc
 *.swp
-*.pkl
 
 # Ignore data files
+testImages/
+testImages_all/
+fer2013/
+*.pkl
 *.png
 *.jpg
 *.gz
