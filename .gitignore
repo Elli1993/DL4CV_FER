@@ -1,2 +1,12 @@
 .idea/
 Scripts/experiments/
+.env*
+*.pyc
+*.swp
+*.pkl
+
+# Ignore data files
+*.png
+*.jpg
+*.gz
+*.csv
