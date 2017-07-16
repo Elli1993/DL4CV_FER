@@ -7,12 +7,17 @@ import time
 from utils.data_iterator import iterate_minibatches
 import numpy as np
 from models.cnn_models import build_cnn
+import cPickle as pickle
+from models.cnn_models import build_shallow_cnn
 
 def train_model(networkname = None, num_epochs = 10, batch_size = 200):
+    weight_decay =1e-6
     train_data = load_fer(0, one_hot=False, flat=False)
     val_data = load_fer(1, one_hot=False, flat=False)
     test_data = load_fer(2, one_hot=False, flat=False)
-
+    losses = {}
+    training_loss_history = []
+    validation_loss_history = []
     input_var = T.tensor4('inputs')
     target_var = T.ivector('targets')
 
@@ -20,7 +25,7 @@ def train_model(networkname = None, num_epochs = 10, batch_size = 200):
 
     if networkname.startswith('cnn'):
         print ('creating network')
-        network = build_cnn(input_var=input_var)
+        network = build_shallow_cnn(input_var=input_var)
     else:
         print('no correct network provided')
 
@@ -30,13 +35,15 @@ def train_model(networkname = None, num_epochs = 10, batch_size = 200):
     loss = lasagne.objectives.categorical_crossentropy(prediction, target_var)
     loss = loss.mean()
     # We could add some weight decay as well here, see lasagne.regularization.
-
+    weightsl2 = lasagne.regularization.regularize_network_params(network, lasagne.regularization.l2)
+    loss += weight_decay * weightsl2
     # Create update expressions for training, i.e., how to modify the
     # parameters at each training step. Here, we'll use Stochastic Gradient
     # Descent (SGD) with Nesterov momentum, but Lasagne offers plenty more.
     params = lasagne.layers.get_all_params(network, trainable=True)
-    updates = lasagne.updates.nesterov_momentum(
-        loss, params, learning_rate=0.01, momentum=0.9)
+    #updates = lasagne.updates.nesterov_momentum(
+    #    loss, params, learning_rate=0.001, momentum=0.9)
+    updates = lasagne.updates.adam(loss, params, learning_rate=0.001)
 
     # Create a loss expression for validation/testing. The crucial difference
     # here is that we do a deterministic forward pass through the network,
@@ -64,16 +71,18 @@ def train_model(networkname = None, num_epochs = 10, batch_size = 200):
         train_err = 0
         train_batches = 0
         start_time = time.time()
-        for batch in iterate_minibatches(train_data['data'][:500], train_data['target'][:500], batch_size, shuffle=True):
+        for batch in iterate_minibatches(train_data['data'], train_data['target'], batch_size, shuffle=True):
             inputs, targets = batch
             train_err += train_fn(inputs, targets)
             train_batches += 1
+            if (train_batches%5) == 0:
+                print('Batchnumber {} done'.format(train_batches))
 
         # And a full pass over the validation data:
         val_err = 0
         val_acc = 0
         val_batches = 0
-        for batch in iterate_minibatches(val_data['data'][:500], val_data['target'][:500], 500, shuffle=False):
+        for batch in iterate_minibatches(val_data['data'], val_data['target'], 200, shuffle=False):
             inputs, targets = batch
             err, acc = val_fn(inputs, targets)
             val_err += err
@@ -87,12 +96,21 @@ def train_model(networkname = None, num_epochs = 10, batch_size = 200):
         print("  validation loss:\t\t{:.6f}".format(val_err / val_batches))
         print("  validation accuracy:\t\t{:.2f} %".format(
             val_acc / val_batches * 100))
+        training_loss_history.append(train_err/train_batches)
+        validation_loss_history.append(val_err / val_batches)
+
+        if (epoch % 5) == 0:
+            print ('saving network')
+            params = lasagne.layers.get_all_param_values(network)
+            paramname = 'shallow_cnn_trained' + str(epoch) + '.pkl'
+            pickle.dump(params, open(paramname, 'wb'))
+            print('network saved')
 
     # After training, we compute and print the test error:
     test_err = 0
     test_acc = 0
     test_batches = 0
-    for batch in iterate_minibatches(test_data['data'][:500], test_data['target'][:500], 500, shuffle=False):
+    for batch in iterate_minibatches(test_data['data'], test_data['target'], 500, shuffle=False):
         inputs, targets = batch
         err, acc = val_fn(inputs, targets)
         test_err += err
@@ -103,7 +121,7 @@ def train_model(networkname = None, num_epochs = 10, batch_size = 200):
     print("  test accuracy:\t\t{:.2f} %".format(
         test_acc / test_batches * 100))
 
-    np.savez('model.npz', *lasagne.layers.get_all_param_values(network))
+    #np.savez('model.npz', *lasagne.layers.get_all_param_values(network))
     # Optionally, you could now dump the network weights to a file like this:
     # np.savez('model.npz', *lasagne.layers.get_all_param_values(network))
     #
@@ -111,3 +129,9 @@ def train_model(networkname = None, num_epochs = 10, batch_size = 200):
     # with np.load('model.npz') as f:
     #     param_values = [f['arr_%d' % i] for i in range(len(f.files))]
     # lasagne.layers.set_all_param_values(network, param_values)
+    losses['train_loss'] = training_loss_history
+    losses['val_loss'] = validation_loss_history
+
+
+
+    return losses

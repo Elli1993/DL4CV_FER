@@ -1,5 +1,6 @@
 import csv
 import numpy as np
+import os
 
 
 def convert_to_one_hot(raw_target):
@@ -21,6 +22,7 @@ def load_fer(dataset = 0, one_hot = True, flat = True, expand = False):
     :return: A dict with `data` and `target` keys.
     '''
 
+
     dest_file = 'utils/data/fer2013.csv'
     delimiter = ','
     firstline = True
@@ -31,6 +33,8 @@ def load_fer(dataset = 0, one_hot = True, flat = True, expand = False):
     validation_images = []
     test_labels = []
     test_images = []
+    mean_image = np.load('utils/mean.npz')
+    mean_image = mean_image['mean']
     with open(dest_file, 'r') as dest_f:
         data_iter = csv.reader(dest_f,
                             delimiter = delimiter,
@@ -63,6 +67,7 @@ def load_fer(dataset = 0, one_hot = True, flat = True, expand = False):
     if dataset == 0:
         training_images = np.asarray(training_images)
         training_images = np.reshape(training_images, (-1, 1, 48, 48))
+        training_images = training_images - mean_image
         training_labels = np.asarray(training_labels, dtype=np.int32)
         if one_hot:
             training_labels = convert_to_one_hot(training_labels)
@@ -70,6 +75,7 @@ def load_fer(dataset = 0, one_hot = True, flat = True, expand = False):
     elif dataset == 1:
         validation_images = np.asarray(validation_images)
         validation_images = np.reshape(validation_images, (-1, 1, 48, 48))
+        validation_images = validation_images - mean_image
         validation_labels = np.asarray(validation_labels, dtype=np.int32)
         if one_hot:
             validation_labels = convert_to_one_hot(validation_labels)
@@ -77,6 +83,7 @@ def load_fer(dataset = 0, one_hot = True, flat = True, expand = False):
     else:
         test_images = np.asarray(test_images)
         test_images = np.reshape(test_images, (-1, 1, 48, 48))
+        test_images = test_images - mean_image
         test_labels = np.asarray(test_labels, dtype=np.int32)
         if one_hot:
             test_labels = convert_to_one_hot(test_labels)
