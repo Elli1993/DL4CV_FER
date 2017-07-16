@@ -3,7 +3,7 @@ from utils.visualize import display_one_image
 from utils.dataset import load_fer
 #this is an example of how to use the iterator and to load the dataset
 
-fer = load_fer(0, one_hot=True, flat=False, expand=False)
+fer = load_fer(0, one_hot=True, flat=False, expand=False, augment=True)
 #loading the training data (0 is for training, 1 for validation and 2 for test
 fer['data'] = fer['data'][:500]
 fer['target'] = fer['target'][:500]

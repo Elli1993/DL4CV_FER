@@ -9,7 +9,7 @@ def convert_to_one_hot(raw_target):
     one_hot_target[np.arange(raw_target.shape[0]), raw_target.astype(np.int)] = 1
     return one_hot_target.astype(np.int32)
 
-def load_fer(dataset = 0, one_hot = True, flat = True, expand = False):
+def load_fer(dataset = 0, one_hot = True, flat = True, expand = False, augment = False, subtract_mean = True):
     '''
     Loads the FER Dataset from memory and returns the dataset.
     The fer2013.csv file needs to be extracted and placed under data/fer2013.csv. The labels can be converted
@@ -67,15 +67,21 @@ def load_fer(dataset = 0, one_hot = True, flat = True, expand = False):
     if dataset == 0:
         training_images = np.asarray(training_images)
         training_images = np.reshape(training_images, (-1, 1, 48, 48))
-        training_images = training_images - mean_image
+        if subtract_mean:
+            training_images = training_images - mean_image
         training_labels = np.asarray(training_labels, dtype=np.int32)
+        if augment:
+            flipped_images = np.flip(training_images, 3)
+            training_images = np.append(training_images, flipped_images, axis=0)
+            training_labels = np.append(training_labels, training_labels, axis=0)
         if one_hot:
             training_labels = convert_to_one_hot(training_labels)
         fer = {'data': training_images, 'target': training_labels}
     elif dataset == 1:
         validation_images = np.asarray(validation_images)
         validation_images = np.reshape(validation_images, (-1, 1, 48, 48))
-        validation_images = validation_images - mean_image
+        if subtract_mean:
+            validation_images = validation_images - mean_image
         validation_labels = np.asarray(validation_labels, dtype=np.int32)
         if one_hot:
             validation_labels = convert_to_one_hot(validation_labels)
@@ -83,7 +89,8 @@ def load_fer(dataset = 0, one_hot = True, flat = True, expand = False):
     else:
         test_images = np.asarray(test_images)
         test_images = np.reshape(test_images, (-1, 1, 48, 48))
-        test_images = test_images - mean_image
+        if subtract_mean:
+            test_images = test_images - mean_image
         test_labels = np.asarray(test_labels, dtype=np.int32)
         if one_hot:
             test_labels = convert_to_one_hot(test_labels)
