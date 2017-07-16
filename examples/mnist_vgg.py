@@ -13,6 +13,7 @@ from lasagne.layers import InputLayer, DenseLayer, DropoutLayer, NonlinearityLay
 from lasagne.layers import Conv2DLayer as ConvLayer
 from lasagne.layers import MaxPool2DLayer as PoolLayer
 
+theano.config.floatX = 'float64'
 
 def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
     assert len(inputs) == len(targets)
@@ -195,7 +196,7 @@ print("Loading data...")
 X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
 
 # Prepare Theano variables for inputs and targets
-input_var = T.tensor4('inputs')
+input_var = T.tensor4('inputs', dtype=theano.config.floatX)
 target_var = T.ivector('targets')
 
 ####### Create neural network model #######

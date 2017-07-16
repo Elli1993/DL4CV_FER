@@ -1,5 +1,4 @@
 .idea/
-experiments/
 .env*
 *.pyc
 *.swp
@@ -7,6 +6,8 @@ experiments/
 # Ignore data files
 testImages/
 testImages_all/
+experiments/
+data/
 fer2013/
 *.pkl
 *.png
