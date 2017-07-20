@@ -8,24 +8,38 @@ from utils.data_iterator import iterate_minibatches
 import numpy as np
 from models.cnn_models import build_cnn
 import cPickle as pickle
+
 from models.cnn_models import build_shallow_cnn
+from models.pretrained_models import build_vgg_cnn
+
+theano.config.floatX = 'float64'
 
 def train_model(networkname = None, num_epochs = 10, batch_size = 200):
     weight_decay =1e-6
-    train_data = load_fer(0, one_hot=False, flat=False)
-    val_data = load_fer(1, one_hot=False, flat=False)
-    test_data = load_fer(2, one_hot=False, flat=False)
     losses = {}
     training_loss_history = []
     validation_loss_history = []
-    input_var = T.tensor4('inputs')
+    input_var = T.tensor4('inputs', dtype=theano.config.floatX)
     target_var = T.ivector('targets')
 
     print('starting to create network...')
 
     if networkname.startswith('cnn'):
+        print('load fer data')
+        train_data = load_fer(0, one_hot=False, flat=False)
+        val_data = load_fer(1, one_hot=False, flat=False)
+        test_data = load_fer(2, one_hot=False, flat=False)
+
         print ('creating network')
         network = build_shallow_cnn(input_var=input_var)
+    elif networkname.startswith('vgg'):
+        print('load fer data')
+        train_data = load_fer(0, one_hot=False, flat=False, expand=True)
+        val_data = load_fer(1, one_hot=False, flat=False, expand=True)
+        test_data = load_fer(2, one_hot=False, flat=False, expand=True)
+
+        print ('creating network')
+        network = build_vgg_cnn(input_var=input_var, name_pretrained_model='vgg16.pkl')
     else:
         print('no correct network provided')
 
@@ -135,3 +149,5 @@ def train_model(networkname = None, num_epochs = 10, batch_size = 200):
 
 
     return losses
+
+
