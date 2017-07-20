@@ -108,7 +108,7 @@ def build_fc_net(input_var=None):
     # 50% dropout again:
     l_hid2_drop = DropoutLayer(l_hid2, p=0.5)
 
-    l_out = DenseLayer(l_hid2_drop, num_units=10, nonlinearity=lasagne.nonlinearities.softmax)
+    l_out = DenseLayer(l_hid2_drop, num_units=7, nonlinearity=lasagne.nonlinearities.softmax)
 
     return l_out
 
@@ -129,7 +129,7 @@ def build_cnn(input_var, pretrained_model):
 
     network = DenseLayer(dropout(network, p=.5), num_units=256, nonlinearity=lasagne.nonlinearities.rectify)
 
-    network = DenseLayer(dropout(network, p=.5), num_units=10, nonlinearity=lasagne.nonlinearities.softmax)
+    network = DenseLayer(dropout(network, p=.5), num_units=7, nonlinearity=lasagne.nonlinearities.softmax)
 
     return network
 
