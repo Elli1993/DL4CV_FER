@@ -12,7 +12,7 @@ import cPickle as pickle
 from models.cnn_models import build_shallow_cnn
 from models.pretrained_models import build_vgg_cnn
 
-theano.config.floatX = 'float64'
+theano.config.floatX = 'float32'
 
 def train_model(networkname = None, num_epochs = 10, batch_size = 200):
     weight_decay =1e-6
@@ -34,6 +34,7 @@ def train_model(networkname = None, num_epochs = 10, batch_size = 200):
         network = build_shallow_cnn(input_var=input_var)
     elif networkname.startswith('vgg'):
         print('load fer data')
+        # default: load_fer(dataset = 0, one_hot = True, flat = True, expand = False, augment = False, subtract_mean = True)
         train_data = load_fer(0, one_hot=False, flat=False, expand=True)
         val_data = load_fer(1, one_hot=False, flat=False, expand=True)
         test_data = load_fer(2, one_hot=False, flat=False, expand=True)
@@ -72,10 +73,10 @@ def train_model(networkname = None, num_epochs = 10, batch_size = 200):
 
     # Compile a function performing a training step on a mini-batch (by giving
     # the updates dictionary) and returning the corresponding training loss:
-    train_fn = theano.function([input_var, target_var], loss, updates=updates)
+    train_fn = theano.function([input_var, target_var], loss, updates=updates, allow_input_downcast=True)
 
     # Compile a second function computing the validation loss and accuracy:
-    val_fn = theano.function([input_var, target_var], [test_loss, test_acc])
+    val_fn = theano.function([input_var, target_var], [test_loss, test_acc], allow_input_downcast=True)
 
     # Finally, launch the training loop.
     print("Starting training...")
@@ -89,8 +90,8 @@ def train_model(networkname = None, num_epochs = 10, batch_size = 200):
             inputs, targets = batch
             train_err += train_fn(inputs, targets)
             train_batches += 1
-            if (train_batches%5) == 0:
-                print('Batchnumber {} done'.format(train_batches))
+            # if (train_batches%5) == 0:
+            #     print('Batchnumber {} done'.format(train_batches))
 
         # And a full pass over the validation data:
         val_err = 0
