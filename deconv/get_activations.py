@@ -3,7 +3,7 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import io
-#import skimage.transform
+import skimage.transform
 import urllib
 import os
 import matplotlib.patheffects as PathEffects
@@ -12,8 +12,6 @@ import cPickle as pickle
 import datetime
 import time
 import csv
-from PIL import Image
-import sys
 
 import theano
 import lasagne
@@ -45,9 +43,6 @@ if not os.path.exists(experimentpath):
     os.makedirs(experimentpath)
 
 epoch = 0
-number = 0
-#number = np.int64(sys.argv[1])
-print number
 
 
 
@@ -59,8 +54,8 @@ network['input'] = lasagne.layers.InputLayer(shape=(None, 3, 48, 48))
 network['pre_conv1_1'] = ConvLayer(network['input'], 64, 3, pad=1, flip_filters=False)
 network['pre_conv1_2'] = ConvLayer(network['pre_conv1_1'], 64, 3, pad=1, flip_filters=False)
 network['pre_pool1'] = lasagne.layers.MaxPool2DLayer(network['pre_conv1_2'], pool_size=(2, 2))
-network['pre_conv2_1'] = ConvLayer(network['pre_pool1'], 128, 3, pad=1, flip_filters=False)
-network['pre_conv2_2'] = ConvLayer(network['pre_conv2_1'], 128, 3, pad=1, flip_filters=False)
+network['pre_conv1_2'] = ConvLayer(network['pre_pool1'], 128, 3, pad=1, flip_filters=False)
+network['pre_conv2_2'] = ConvLayer(network['pre_conv1_2'], 128, 3, pad=1, flip_filters=False)
 network['pre_pool2'] = lasagne.layers.MaxPool2DLayer(network['pre_conv2_2'], pool_size=(2, 2))
 # new layers
 network['add_batch_norm'] = lasagne.layers.batch_norm(ConvLayer(network['pre_pool2'], num_filters=32, filter_size=(5, 5), nonlinearity=lasagne.nonlinearities.rectify, flip_filters=False, W=lasagne.init.GlorotUniform()))
@@ -74,8 +69,8 @@ output_layer = network['add_dense2']
 print 'load pretrained model'
 model = pickle.load(open(PARAM_FILE_TO_LOAD, 'rb'))
 CLASSES = ["Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"]
-MEAN_IMAGE = np.load('utils/mean.npz')
-MEAN_IMAGE = MEAN_IMAGE['mean']
+#MEAN_IMAGE = np.load('utils/mean.npz')
+#MEAN_IMAGE = MEAN_IMAGE['mean']
 
 
 # Function to read the pickle file with the network learnt parameters
@@ -97,72 +92,17 @@ else:
     print 'set pretrained model values'
     lasagne.layers.set_all_param_values(output_layer, model)
 
+activations = []
 data = load_fer(2, True, False, True, False, True)
-org_data = load_fer(2, True, False, False, False, False)
+for batch, target in iterate_minibatches(data['data'], data['target'], 1, False):
+    input=batch
+    out = lasagne.layers.get_output(network('pre_conv1_1'), input)
+    output = out.eval()
+    activations.append(np.sum(output,axis=1))
 
 
-# define deconvolutional network
-print 'Defining Deconv Model'
-denetwork = {}
-#denetwork['de_input'] = InputLayer(shape=(None, 64, 48, 48))
-denetwork['de_input'] = lasagne.layers.InputLayer(shape=(None, 3, 48, 48))
-denetwork['de_pre_conv1_1'] = ConvLayer(denetwork['de_input'], 64, 3, pad=1, flip_filters=False,
-                                        W=network['pre_conv1_1'].W)
-denetwork['de_pre_conv1_2'] = ConvLayer(denetwork['de_pre_conv1_1'], 64, 3, pad=1, flip_filters=False,
-                                        W=network['pre_conv1_2'].W)
-denetwork['midlayer'] = set_zero(network['pre_conv1_2'], number=number)
-denetwork['out_pre_conv1_2'] = lasagne.layers.InverseLayer(denetwork['midlayer'], network['pre_conv1_2'])
-#denetwork['out_reshape1_2'] = lasagne.layers.ReshapeLayer(denetwork['out_pre_conv1_2'], (1, 64, 48, 48))
-denetwork['out_pre_conv1_1'] = lasagne.layers.InverseLayer(denetwork['out_pre_conv1_2'], network['pre_conv1_1'])
-
-deconvout = denetwork['out_pre_conv1_1']
-#which_neuron = denetwork['midlayer']
-#images= []
-
-with open('conv1_2_activations.pkl', 'rb') as infile:
-    result = pickle.load(infile)
-
-result = np.asarray(result)
-result = result.reshape(3590, 64)
-list = np.argpartition(result[:, number], -5)[-5:]
-
-for i in list:
-
-    print i
-    input=data['data'][i].reshape(1,3,48,48)
-    #neuron = lasagne.layers.get_output(which_neuron, input)
-    #neuron = neuron.argmax()
-    deconvolutet = lasagne.layers.get_output(deconvout, input)
-
-    image = deconvolutet.eval()
-    #index = neuron.eval()
-    #images.append(image)
-    img = image.reshape(3, 48, 48)
-    img = np.sum(img, axis=0)
-    #img = np.swapaxes(img, 0, 1)
-    img = img.reshape(48,48)
-    img += abs(img.min())
-    img = (255/ img.max()) * img
-    img = Image.fromarray(np.uint8(img))
-    img = img.convert('RGB')
-    img.save('deconvolution2_filter{}_{}.jpg'.format(number, i))
-
-    org_img = np.asarray(org_data['data'][i])
-    #org_img = np.swapaxes(org_img, 0, 1)
-    org_img = org_img.reshape(48,48)
-    org_img = Image.fromarray(np.uint8(org_img))
-    org_img = org_img.convert('RGB')
-    org_img.save('original2_filter{}_{}.jpg'.format(number, i))
-    #save original image as well!
-    # special filenamees
-
-    #with open('index_layer_conv1_1_fer.csv', 'a') as f:
-    #    writer = csv.writer(f)
-    #    writer.writerow([index])
-
-
-#with open('deconv_layer_conv1_1_fer.pkl', 'wb') as outfile:
-#    pickle.dump(images, outfile, pickle.HIGHEST_PROTOCOL)
+with open('conv1_1_activations.pkl', 'wb') as outfile:
+    pickle.dump(activations, outfile, pickle.HIGHEST_PROTOCOL)
 
 
 
